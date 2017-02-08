@@ -18,33 +18,102 @@ using namespace std;
 int main(int argc, char *argv[]) {
   char                 *serverNameStr = 0;
   unsigned short int   tcpServerPort;
-    sockaddr_in tcpServerAddr;
-     int         tcpConnectionFd;
+  
+  int tcpConnectionFd;
+  int bytesSent, bytesReceived;
+  sockaddr_in tcpServerAddr;
 
-  // prase the argvs, obtain server_name and tcpServerPort
+  // parse the argvs, obtain server_name and tcpServerPort
   parseArgv(argc, argv, &serverNameStr, tcpServerPort);
 
   std::cout << "[TCP] Tic Tac Toe client started..." << std::endl;
   std::cout << "[TCP] Connecting to server: " << serverNameStr
             << ":" << tcpServerPort << std::endl;
-    
-    return 0;
-  // Sample use of TicTacToe
-//  TicTacToe game;
-//  game.printBoard();
-//    
-//  std::cout << std::endl << std::endl << "MARK a" << std::endl;
-//  game.mark('a', 'X');
-//  game.printBoard();
-//  std::cout << std::endl << std::endl << "MARK d" << std::endl;
-//  game.mark('d', 'X');
-//  game.printBoard();
-//  std::cout << std::endl << std::endl << "MARK g" << std::endl;
-//  game.mark('g', 'X');
-//  game.printBoard();
-//  
-//  if(game.hasWon()) {
-//    std::cout << "X has won!" << std::endl;
-//  }
-}
+            
+  struct hostent *hostEnd = gethostbyname(serverNameStr);
+  
+	// create a TCP socket with protocol family AF_INET
+	tcpConnectionFd = socket(AF_INET, SOCK_STREAM, 0);
 
+	// if the return value is -1, the creation of socket is failed.
+	if(tcpConnectionFd < 0) {
+		 cerr << "[ERR] Unable to create TCP socket." << endl;
+		 exit(1);
+	}
+	
+	// initialize the socket address strcut by setting all bytes to 0
+	memset(&tcpServerAddr, 0, sizeof(tcpServerAddr));
+
+	// details are covered in class/slides
+	tcpServerAddr.sin_family = AF_INET;
+	tcpServerAddr.sin_port   = htons(tcpServerPort);
+
+	memcpy(&tcpServerAddr.sin_addr, hostEnd -> h_addr, 
+		   hostEnd -> h_length);
+
+	if(connect(tcpConnectionFd, (sockaddr *)&tcpServerAddr, 
+			   sizeof(tcpServerAddr)) < 0) {
+		cerr << "[ERR] Unable to connect to server." << endl;
+		if(close(tcpConnectionFd) < 0) {
+			cerr << "[ERR] Error when closing TCP socket" << endl;
+		}
+		exit(1);
+	}
+	
+	
+	MyPacket outPacket;
+	MyPacket inPacket;
+	char typeName[typeNameLen];
+	
+	memset(&outPacket, 0, sizeof(outPacket));
+	outPacket.type = JOIN;
+	
+	bytesSent = send(tcpConnectionFd, &outPacket, sizeof(outPacket), 0);
+
+	if(bytesSent < 0) {
+		cerr << "[ERR] Error sending message to server." << endl;
+		exit(1);
+	} else {
+		getTypeName(outPacket.type, typeName);
+		cout << "[TCP] Sent: " << typeName << endl;
+	}
+	
+	cout << "WOOOW" << endl;
+	
+	// wipe out anything in incomingPkt's buffer
+	memset(&inPacket, 0, sizeof(inPacket));
+	// receive
+	bytesReceived = recv(tcpConnectionFd,
+			 &inPacket,
+			 sizeof(inPacket),
+			 0);
+	
+	// check
+	if (bytesReceived < 0) {
+	std::cerr << "[ERR] Error receiving message from client" << std::endl;
+	return false;
+	} else {
+	getTypeName(inPacket.type, typeName);
+	std::cout << "[TCP] Recv: " << typeName << " "
+			  << inPacket.buffer << std::endl;
+	}
+	
+	
+
+  // Sample use of TicTacToe
+  /*TicTacToe game;
+  game.printBoard();
+  std::cout << std::endl << std::endl << "MARK a" << std::endl;
+  game.mark('a', 'X');
+  game.printBoard();
+  std::cout << std::endl << std::endl << "MARK d" << std::endl;
+  game.mark('d', 'X');
+  game.printBoard();
+  std::cout << std::endl << std::endl << "MARK g" << std::endl;
+  game.mark('g', 'X');
+  game.printBoard();
+  
+  if(game.hasWon()) {
+    std::cout << "X has won!" << std::endl;
+  }*/
+}
