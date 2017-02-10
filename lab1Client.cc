@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 		cout << "[TCP] Sent: " << typeName << endl;
 	}
 	
-	cout << "WOOOW" << endl;
+	//cout << "WOOOW" << endl;
 	
 	// wipe out anything in incomingPkt's buffer
 	memset(&inPacket, 0, sizeof(inPacket));
@@ -97,23 +97,47 @@ int main(int argc, char *argv[]) {
 	std::cout << "[TCP] Recv: " << typeName << " "
 			  << inPacket.buffer << std::endl;
 	}
+	//What's my mark?
+	char mark = inPacket.buffer[0];
+	
+	
+	//UDP Request
+	memset(&outPacket, 0, sizeof(outPacket));
+	outPacket.type = GET_UDP_PORT;
+	
+	bytesSent = send(tcpConnectionFd, &outPacket, sizeof(outPacket), 0);
+
+	if(bytesSent < 0) {
+		cerr << "[ERR] Error sending message to server." << endl;
+		exit(1);
+	} else {
+		getTypeName(outPacket.type, typeName);
+		cout << "[TCP] Sent: " << typeName << endl;
+	}
+	// wipe out anything in incomingPkt's buffer
+	memset(&inPacket, 0, sizeof(inPacket));
+	// receive
+	bytesReceived = recv(tcpConnectionFd,
+			 &inPacket,
+			 sizeof(inPacket),
+			 0);
+	
+	// check
+	if (bytesReceived < 0) {
+	std::cerr << "[ERR] Error receiving message from client" << std::endl;
+	return false;
+	} else {
+	getTypeName(inPacket.type, typeName);
+	std::cout << "[TCP] Recv: " << typeName << " "
+			  << inPacket.buffer << std::endl;
+	}
+	
+	unsigned short int   udpServerPort = atoi(inPacket.buffer);
+	cout << "That UDP is gon be "<<udpServerPort;
+	
+	//UDP time
 	
 	
 
-  // Sample use of TicTacToe
-  /*TicTacToe game;
-  game.printBoard();
-  std::cout << std::endl << std::endl << "MARK a" << std::endl;
-  game.mark('a', 'X');
-  game.printBoard();
-  std::cout << std::endl << std::endl << "MARK d" << std::endl;
-  game.mark('d', 'X');
-  game.printBoard();
-  std::cout << std::endl << std::endl << "MARK g" << std::endl;
-  game.mark('g', 'X');
-  game.printBoard();
   
-  if(game.hasWon()) {
-    std::cout << "X has won!" << std::endl;
-  }*/
 }
