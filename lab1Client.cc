@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 	bytesSent = send(tcpConnectionFd, &outPacket, sizeof(outPacket), 0);
 
 	if(bytesSent < 0) {
-		cerr << "[ERR] Error sending message to server." << endl;
+		cerr << "[ERR] Error sending message to client." << endl;
 		exit(1);
 	} else {
 		getTypeName(outPacket.type, typeName);
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 	
 	// check
 	if (bytesReceived < 0) {
-	std::cerr << "[ERR] Error receiving message from client" << std::endl;
+	std::cerr << "[ERR] Error receiving message from server" << std::endl;
 	return false;
 	} else {
 	getTypeName(inPacket.type, typeName);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	bytesSent = send(tcpConnectionFd, &outPacket, sizeof(outPacket), 0);
 
 	if(bytesSent < 0) {
-		cerr << "[ERR] Error sending message to server." << endl;
+		cerr << "[ERR] Error sending message to client." << endl;
 		exit(1);
 	} else {
 		getTypeName(outPacket.type, typeName);
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 	
 	// check
 	if (bytesReceived < 0) {
-	std::cerr << "[ERR] Error receiving message from client" << std::endl;
+	std::cerr << "[ERR] Error receiving message from server" << std::endl;
 	return false;
 	} else {
 	getTypeName(inPacket.type, typeName);
@@ -133,11 +133,42 @@ int main(int argc, char *argv[]) {
 	}
 	
 	unsigned short int   udpServerPort = atoi(inPacket.buffer);
-	cout << "That UDP is gon be "<<udpServerPort;
 	
 	//UDP time
-	
-	
+	sockaddr_in udpServerAddr;
+	socklen_t   udpServerAddrLen = sizeof(udpServerAddr);
 
-  
+	int     udpServerFd;
+	
+	// create a UDP socket
+	udpSocketFd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	// if the return value is -1, the creation of UDP socket is failed.
+	if (udpServerFd < 0) {
+	std::cerr << "[ERR] Unable to create UDP socket." << std::endl;
+	exit(1);
+	}
+
+    memset(&udpServerAddr, 0, sizeof(udpServerAddr));
+
+    // details are covered in class/slides
+    udpServerAddr.sin_family = AF_INET;
+    udpServerAddr.sin_port   = htons(udpServerPort);
+
+    memcpy(&udpServerAddr.sin_addr, hostEnd -> h_addr, hostEnd -> h_length);
+    
+    memset(&outPacket, 0, sizeof(outPacket));
+    outPacket.type = GET_BOARD;
+    outPacket.buffer[0] = mark;
+
+    bytesSent = sendto(udpServerFd, &outPacket,
+                           sizeof(outPacket), 0,
+                           (sockaddr *) &udpServerAddr,
+                           udpServerAddrLen);
+    if(bytesSent < 0) {
+            cerr << "[ERR] Error sending message to server." << endl;
+            exit(1);
+        } else {
+            cout << "[UDP] Sent: " << sendBuf << endl;
+        }
 }
