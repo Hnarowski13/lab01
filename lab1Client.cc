@@ -159,18 +159,126 @@ int main(int argc, char *argv[]) {
     memcpy(&udpServerAddr.sin_addr, hostEnd -> h_addr, hostEnd -> h_length);
     
     memset(&outPacket, 0, sizeof(outPacket));
-    outPacket.type = GET_BOARD;
-    outPacket.buffer[0] = mark;
+	outPacket.type = GET_BOARD;
+	outPacket.buffer[0] = mark;
 
-    bytesSent = sendto(udpServerFd, &outPacket,
-                           sizeof(outPacket), 0,
-                           (sockaddr *) &udpServerAddr,
-                           udpServerAddrLen);
-    if(bytesSent < 0) {
-            cerr << "[ERR] Error sending message to server." << endl;
+	bytesSent = sendto(udpServerFd, &outPacket,
+						   sizeof(outPacket), 0,
+						   (sockaddr *) &udpServerAddr,
+						   udpServerAddrLen);
+	if(bytesSent < 0) {
+			cerr << "[ERR] Error sending message to server." << endl;
+			exit(1);
+		} else {
+			getTypeName(outPacket.type, typeName);
+			cout << "[UDP] Sent: " << typeName << endl;
+			cout << "[SYS] Waiting for response ..." << endl;
+		}
+    
+    bool playing = true;
+    while(playing)
+    {
+		// wipe out anything in inPkt
+        memset(&inPacket, 0, sizeof(inPacket));
+        // receive
+        bytesReceived = recv(udpServerFd, &inPacket, sizeof(inPacket), 0);
+
+        // check
+        if(bytesReceived < 0) {
+            cerr << "[ERR] Error receiving message from server." << endl;
             exit(1);
         } else {
-            getTypeName(outPacket.type, typeName);
-		    cout << "[UDP] Sent: " << typeName << endl;
+			getTypeName(inPacket.type, typeName);
+            cout << "[UDP] Rcvd: " << typeName << " "
+			  << inPacket.buffer << endl;
         }
+		
+		if(inPacket.type == YOUR_TURN)
+		{
+			TicTacToe game(&inPacket.buffer[0]);
+			game.printBoard();
+			cout << "[SYS] Your Turn." << endl;
+			while(!getCommand(outPacket, game, mark))
+			{
+				
+			}
+			
+			bytesSent = sendto(udpServerFd, &outPacket,
+						   sizeof(outPacket), 0,
+						   (sockaddr *) &udpServerAddr,
+						   udpServerAddrLen);
+			if(bytesSent < 0) {
+					cerr << "[ERR] Error sending message to server." << endl;
+					exit(1);
+				} else {
+					getTypeName(outPacket.type, typeName);
+					cout << "[UDP] Sent: " << typeName << " "
+						<< outPacket.buffer << endl;
+				}
+			
+				
+		}
+		else if (inPacket.type == OPPONENT_TURN)
+		{
+			
+		}
+		else if (inPacket.type == UPDATE_BOARD)
+		{
+			memset(&outPacket, 0, sizeof(outPacket));
+			outPacket.type = GET_BOARD;
+			outPacket.buffer[0] = mark;
+
+			bytesSent = sendto(udpServerFd, &outPacket,
+								   sizeof(outPacket), 0,
+								   (sockaddr *) &udpServerAddr,
+								   udpServerAddrLen);
+			if(bytesSent < 0) {
+					cerr << "[ERR] Error sending message to server." << endl;
+					exit(1);
+				} else {
+					getTypeName(outPacket.type, typeName);
+					cout << "[UDP] Sent: " << typeName << endl;
+					cout << "[SYS] Waiting for response ..." << endl;
+				}
+			
+		}
+		else
+		{
+			switch (inPacket.type){
+				case YOU_WON:
+					cout << "Congratulations! You won!" << endl;
+					playing = false;
+					break;
+					
+				case YOU_LOSE:
+					cout << "Too bad! You lose!" << endl;
+					playing = false;
+					break;
+					
+				case TIE:
+					cout << "It's a tie! Could be worse." << endl;
+					playing = false;
+					break;
+					
+				case EXIT_GRANT:
+					if(outPacket.type == EXIT)
+					{
+						cout << "You have left the game. You lose!" << endl;
+					}
+					else
+					{
+						cout << "Opponent has left the game. You win!" << endl;
+					}
+					playing = false;
+					break;
+				
+				default:
+					cerr << "[ERR] Not a valid packet type." << endl;
+					playing = false;
+					break;
+			}
+		}
+		
+			
+	}
 }
