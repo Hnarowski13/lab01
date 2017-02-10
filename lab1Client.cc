@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 	//What's my mark?
 	char mark = inPacket.buffer[0];
 	
-	
+	//
 	//UDP Request
 	memset(&outPacket, 0, sizeof(outPacket));
 	outPacket.type = GET_UDP_PORT;
@@ -133,15 +133,16 @@ int main(int argc, char *argv[]) {
 	}
 	
 	unsigned short int   udpServerPort = atoi(inPacket.buffer);
-	
+	//
 	//UDP time
+	//
 	sockaddr_in udpServerAddr;
 	socklen_t   udpServerAddrLen = sizeof(udpServerAddr);
 
 	int     udpServerFd;
 	
 	// create a UDP socket
-	udpSocketFd = socket(AF_INET, SOCK_DGRAM, 0);
+	udpServerFd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	// if the return value is -1, the creation of UDP socket is failed.
 	if (udpServerFd < 0) {
@@ -169,6 +170,7 @@ int main(int argc, char *argv[]) {
             cerr << "[ERR] Error sending message to server." << endl;
             exit(1);
         } else {
-            cout << "[UDP] Sent: " << sendBuf << endl;
+            getTypeName(outPacket.type, typeName);
+		    cout << "[UDP] Sent: " << typeName << endl;
         }
 }
